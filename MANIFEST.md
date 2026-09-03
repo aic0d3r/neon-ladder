@@ -1,0 +1,9 @@
+83143782d0994e67f1c06dd3626ed177  contract.txt
+dbe4e4e260a99de16ca03b7e6e6f2a07  game-score.py
+a04697a05864e419f38ca6e5565f764d  smoke-gate.sh
+c038f51a67d2877f8743ea562cc5076e  wsmin.js
+377c91c9dc8cd75ee17810e6d54389c3  cdp.js
+819164eb7672754aa5c41502689ff6a4  run.sh
+ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
+3a4560af5cc7cce88cdc658da9045b1c  report.sh
+ca15d7168b5200aeb7b45a3449e8bffb  README.md
