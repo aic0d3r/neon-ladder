@@ -1,0 +1,27 @@
+Build "Neon Overdrive", an arcade Breakout game, as a multi-file project you create with tools, file by file. NO external dependencies or CDNs; HTML5 canvas + CSS3 + raw JS only.
+
+Required file structure (use the write tool once per file, complete code every time, zero placeholders):
+1. index.html - loads css/styles.css and all js/ files via script tags in dependency order
+2. css/styles.css - neon/cyberpunk UI, overlays for menu/pause/shop/game-over
+3. js/config.js - constants: canvas size, brick grid, speeds, powerup drop rate (8%), colors
+4. js/particles.js - particle engine: spawn(x,y,color), gravity + fade update, dead-particle cleanup
+5. js/bricks.js - 5-row grid from an array matrix; standard (1 hit, neon blue), armored (3 hits, red->orange->yellow as damaged), volatile (1 hit, neon green, explodes destroying direct array neighbors). Bricks never move. This file also owns exactly ONE obstacle per level: a solid neon-orange floating pad drifting slowly sideways in the mid-field band between grid and paddle. The pad is SOLID - the ball bounces off it with proper reflection, using the same tunneling-resistant sub-step collision as bricks and paddle (the ball must NEVER pass through the pad); laser bolts are absorbed on impact (bolt dies, pad persists); the pad persists for the whole level
+6. js/balls.js - ball entities in an active balls array; paddle reflection angle from strike position vs paddle center; no game over until the LAST ball is lost; dead-ball cleanup
+7. js/powerups.js - falling capsule entities, two types: Tri-Ball (injects two new balls into the array) and Laser (arms the paddle for 6 seconds: Space fires twin neon bolts upward, one per paddle edge, 350ms cooldown, each bolt destroys the first brick it hits and spawns particles; bolts also trigger obstacles they hit)
+8. js/states.js - rigid state machine: menu -> gameplay -> paused -> level clear / game over
+9. js/shop.js - between-levels upgrade shop: spend credits on paddle speed or paddle width (persistent)
+10. js/main.js - game loop, collision wiring, score/credits, keyboard input, level generation (procedurally harder). Rally scoring: score per brick = base brick value * BALL_SPEED_PER_LEVEL^(level-1); the HUD shows the current multiplier
+
+The file list is FIXED: exactly index.html, css/styles.css, and js/config.js, js/particles.js, js/bricks.js, js/balls.js, js/powerups.js, js/states.js, js/shop.js, js/main.js. Do not rename, merge, add, or split files.
+
+Controls are keyboard-only: arrow keys and A/D move the paddle, Space fires the laser when active. MENU/START RULE: pressing Enter starts the game from the main menu (and restarts from game over) - the main menu MUST respond to Enter immediately. SERVE RULE: at level start (and after losing a ball) the ball is glued to the paddle in serve mode and tracks it; the ball launches ONLY when the player presses Space - never auto-launch, no timers. PAD PHYSICS RULE: the floating pad is solid - the ball BOUNCES off it with a correct reflection (the outgoing vector mirrors the incoming vector around the face normal; a top-face hit inverts the vertical component, a side-face hit inverts the horizontal one). The ball must never stick to, slide along, or orbit the pad, and must never pass through it; after every pad bounce the ball travels away at its normal speed. VERIFY PAD PHYSICS BEFORE FINISHING: trace one bounce on paper for a top-face hit and a side-face hit (incoming vector -> face normal -> outgoing vector), then re-read your pad reflection code against both traces before finishing.
+VERIFY INPUT WIRING BEFORE FINISHING: after writing main.js, re-read your keydown listener, your key-to-name mapping, your state transitions, and your menu-start path end to end - the game must be startable purely from the keyboard. Do NOT add any mouse listeners or mouse movement of the paddle. Collision must be tunneling-resistant: move balls in sub-steps no larger than the ball radius per sub-step (or use swept AABB tests), so a ball never passes through a brick or the paddle within a single frame at any level speed.
+
+Pacing contract: the game is fast arcade. config.js defines BALL_BASE_SPEED = 7.0 (px per frame at 60fps, level 1) and BALL_SPEED_PER_LEVEL = 1.07; every ball's speed at level N is BALL_BASE_SPEED * BALL_SPEED_PER_LEVEL^(N-1), recomputed on level start. Laser bolts and falling capsules are also fast (bolts 12 px/frame, capsules 4.5 px/frame). All per-frame constants mean per 60Hz simulation tick: run the simulation on a fixed timestep (accumulator loop inside requestAnimationFrame, dt = 1/60s), never tied to display refresh rate, so the game plays identically on 60/120/144Hz monitors.
+
+Workflow, in order:
+A. Write all 10 files (write tool, one call each).
+B. Run: node --check js/config.js js/particles.js js/bricks.js js/balls.js js/powerups.js js/states.js js/shop.js js/main.js
+C. If any check fails, fix with the edit tool and re-run until all pass.
+D. Read index.html to verify every script tag path matches a real file.
+E. Report per-file line counts, then reply COMPLETE.
