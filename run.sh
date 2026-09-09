@@ -10,7 +10,7 @@ for TRY in 1 2 3 4 5; do
   cd $L/$DIR || exit 1
   P="$(printf '%s ' "$@") [attempt $TRY $(date +%s)]"
   echo "$NAME $LVL" > $L/meta-$NAME
-  timeout 5400 pi -p --no-skills --no-context-files --provider llamacpp/qwen3.8-27b --thinking $LVL --name $NAME "$P" > $L/run-$NAME.txt 2>&1
+  timeout 5400 pi -p --no-skills --no-context-files --provider llamacpp --model qwen3.8-27b --thinking $LVL --name $NAME "$P" > $L/run-$NAME.txt 2>&1
   if [ "$(find $L/$DIR -name '*.js' -o -name '*.html' -o -name '*.css' 2>/dev/null | wc -l)" -gt 0 ]; then
     if bash $HERE/smoke-gate.sh $L/$DIR > $L/smoke-$NAME-$TRY.log 2>&1; then
       echo "=== $NAME try=$TRY SUCCESS (files + SMOKE-OK) ===" >> $L/ladder.log
@@ -24,7 +24,7 @@ for TRY in 1 2 3 4 5; do
       touch $L/$DIR/.repair-used
       cd $L/$DIR || exit 1
       P2="$(printf '%s ' "$@") A previous attempt exists in this directory. The browser reports a fatal error at $LOC (see console message below if given). Diagnose and REPAIR only the broken code with the edit tool - do NOT rewrite or touch working files. Re-run node --check on all js, then verify index.html script tags, then report. [repair attempt $(date +%s)]"
-      timeout 5400 pi -p --no-skills --no-context-files --provider llamacpp/qwen3.8-27b --thinking $LVL --name $NAME "$P2" > $L/run-$NAME-repair.txt 2>&1
+      timeout 5400 pi -p --no-skills --no-context-files --provider llamacpp --model qwen3.8-27b --thinking $LVL --name $NAME "$P2" > $L/run-$NAME-repair.txt 2>&1
       rm -f $L/$DIR/.repair-used
       if bash $HERE/smoke-gate.sh $L/$DIR > $L/smoke-$NAME-repair.log 2>&1; then
         echo "=== $NAME REPAIR SUCCESS (targeted fix, files preserved) ===" >> $L/ladder.log

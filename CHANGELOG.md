@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-09
+
+- `run.sh`: pi's `--provider` takes the provider name only. The old `--provider llamacpp/qwen3.8-27b` slash form is silently ignored, so pi fell back to the default provider from settings. Split into `--provider llamacpp --model qwen3.8-27b` on both the main and repair passes.
+
 ## 2026-09-07
 
 - README rig table: Models and Drafters rows now link the repos (Unsloth 27B + Flash-Next, incoai DFlash2, EasiiX MTP). New Vision row: `mmproj-F16.gguf` from each model repo, passed as `-mm ... --mmproj-offload` on both servers.
