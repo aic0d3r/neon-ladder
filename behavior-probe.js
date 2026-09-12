@@ -27,7 +27,19 @@
     if (!out.enterStart) { key(' ', 'Space'); await sleep(1000); out.stateAfterSpaceStart = state(); }
 
     const Balls = find(['Balls']);
-    const list = Balls ? (Balls.list || Balls.balls || Balls.active || []) : [];
+    let list = [];
+    if (Balls) {
+      if (Array.isArray(Balls)) list = Balls;
+      else {
+        for (const k of ['list', 'balls', 'active', 'items', 'all']) {
+          const v = Balls[k];
+          if (Array.isArray(v)) { list = v; break; }
+          if (typeof v === 'function') { try { const r = v(); if (Array.isArray(r)) { list = r; break; } } catch (e) {} }
+        }
+        if (!list.length) { for (const k of Object.keys(Balls)) { if (Array.isArray(Balls[k])) { list = Balls[k]; break; } } }
+        if (!list.length && typeof Balls.firstAlive === 'function') { try { const b = Balls.firstAlive(); if (b) list = [b]; } catch (e) {} }
+      }
+    }
     let b0 = list[0] || null;
     for (let i = 0; i < 15 && !b0; i++) { await sleep(100); b0 = list[0] || null; }
     out.nBalls = list.length;
@@ -45,6 +57,14 @@
       let arr = Bricks ? (Bricks.list || Bricks.bricks || Bricks.grid) : null;
       if (arr && !Array.isArray(arr)) arr = Object.values(arr);
       if (arr) arr = arr.flat(3);
+      if ((!arr || !arr.length) && Bricks) {
+        for (const k of ['all', 'list', 'bricks', 'getAll']) {
+          if (typeof Bricks[k] === 'function') { try { const r = Bricks[k](); if (Array.isArray(r) && r.length) { arr = r; break; } } catch (e) {} }
+        }
+      }
+      if ((!arr || !arr.length) && Bricks && typeof Bricks.queryRect === 'function') {
+        try { const r = Bricks.queryRect(0, 0, 4000, 4000); if (Array.isArray(r) && r.length) arr = r; } catch (e) {}
+      }
       const Cfg = find(['CONFIG', 'CFG']) || {};
       const radius = (Cfg.BALL && Cfg.BALL.RADIUS) || Cfg.BALL_RADIUS || Cfg.BALL_R || 7;
       const ball = list[0];
