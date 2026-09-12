@@ -1,9 +1,11 @@
 83143782d0994e67f1c06dd3626ed177  contract.txt
-dbe4e4e260a99de16ca03b7e6e6f2a07  game-score.py
+820534e0fda79658203ab37365a0ed14  game-score.py
+2547df564c39126793cd90643cd46ccd  behavior-probe.js
+02a70464534f6455608eaf45de02be03  behavior-probe.sh
 a04697a05864e419f38ca6e5565f764d  smoke-gate.sh
 e64d0e7c4177cf4798cde5c92111dfaa  wsmin.js
 c7d3ea7eec05c971454e420aff64d256  cdp.js
-819164eb7672754aa5c41502689ff6a4  run.sh
+24bee5447e6c1b4f21031ea6a4e029c3  run.sh
 ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 3a4560af5cc7cce88cdc658da9045b1c  report.sh
-f5f0600c5f758efef07331d9c9ba6739  README.md
+ea7d1d43788e481e5e22b268c2691c73  README.md

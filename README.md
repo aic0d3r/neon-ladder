@@ -15,7 +15,8 @@ One cell:
 1. A coding agent gets a fixed contract: build "Neon Overdrive", a 10-file HTML5 canvas breakout game. Exact file list, physics rules, serve behavior, pacing constants, all specified, all static-checkable.
 2. **Static scorer** (19 checks) grades the code: structure, collision correctness, contract compliance, two different velocity-multiplication bug patterns.
 3. **Runtime soak** (120s, headless Chromium via raw CDP): boot errors are fatal, frames and draw calls must advance, reloads are detected.
-4. **You play it.** Two minutes with the arrow keys. This is the grade that matters. The fifteen failure classes in the ledger all live here.
+4. **Behavior probe** (`behavior-probe.sh`): a scripted real-time pass for serve gating (the ball must not move before Space) and brick reflection (the ball must bounce, not pass through). Catches collision-wiring classes the soak and the static scorer cannot see.
+5. **You play it.** Two minutes with the arrow keys. This is the grade that matters. The fifteen failure classes in the ledger all live here.
 
 Wall clock: **5-40 minutes** depending on model and effort tier. The result line is one comment's worth of data, generated for you.
 

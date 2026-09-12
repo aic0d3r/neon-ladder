@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Neon Overdrive build scorer V2.2: adds nested-movement detector (q8-low class: collision handler runs its own movement loop while called from inside another movement loop). V2.1: adds velocity double-scaling detector (v210-high bug class). V2: for the prompt-multi-v2_9 contract (Laser powerup,
+"""Neon Overdrive build scorer V2.3: serve-glue keyword is now word-bounded (V2.2 matched
+"already" as "ready", a false PASS on med-d). Behavior classes (serve gating, brick
+reflection) are checked for real by behavior-probe.sh.
+V2.2: adds nested-movement detector (q8-low class: collision handler runs its own movement loop while called from inside another movement loop). V2.1: adds velocity double-scaling detector (v210-high bug class). V2: for the prompt-multi-v2_9 contract (Laser powerup,
 solid obstacle pad, 8% drop rate). V1 (game-score.py, md5 d93f4423d7a7355dc5c5d8348f0cdc89)
 is frozen for the stripped prompt-multi.txt contract - scores are NOT comparable
 across scorer versions.
@@ -60,8 +63,9 @@ check("game over on last ball only", last)
 clean = re.search(r"filter\s*\(|splice\s*\(|swap", balls + read("js/particles.js"))
 check("dead-entity cleanup", clean)
 
-# 7. serve glue: ball tracks paddle before launch (THE bug class effort level affects)
-glue = re.search(r"(serve|ready|attached|glued|stuck|launch)", src, re.I) and \
+# 7. serve glue (static proxy only; behavior is checked by behavior-probe.sh).
+# Word-bounded so "already" no longer satisfies /ready/ (V2.2 false PASS).
+glue = re.search(r"\b(serve|ready|attached|glued|stuck|launch)\b", src, re.I) and \
        re.search(r"ball[^\n]{0,40}paddle\.(x|w)|paddle\.x[^\n]{0,40}ball", balls + main, re.I)
 check("serve-mode ball tracks paddle", glue)
 
