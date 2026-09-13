@@ -8,4 +8,5 @@ c7d3ea7eec05c971454e420aff64d256  cdp.js
 24bee5447e6c1b4f21031ea6a4e029c3  run.sh
 ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 3a4560af5cc7cce88cdc658da9045b1c  report.sh
-ea7d1d43788e481e5e22b268c2691c73  README.md
+ed56c683fba6ff4cf3400ea7eb21730e  README.md
+6fc177d8d14b7ca741736ed316bc55a7  prompt-multi-v2_12.txt

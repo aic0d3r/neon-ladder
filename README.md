@@ -60,6 +60,7 @@ One adaptive-drafting boundary worth knowing before you tune: the acceptance con
 | file | role |
 |---|---|
 | `contract.txt` | the game contract: file structure, physics, MENU/START + SERVE rules, workflow |
+| `prompt-multi-v2_12.txt` | the bench prompt (current): contract + workflow + attempt marker slot. v2_12 adds MENU/START RULE, SERVE RULE (ball glued to paddle until Space) and the input-wiring verify clause. Published cells to date (FN band, halogen 0.6.1 own-format, halogen 0.7.0 GGUF) ran v2_9 — same contract minus those clauses — so cross-engine cells stay comparable; new cells should use this file. |
 | `game-score.py` | static scorer, 19 checks, versioned + md5-frozen |
 | `smoke-gate.sh` | 120s runtime soak: boot errors fatal, frame/draw-ops advancement, reload detection |
 | `wsmin.js` | raw-WebSocket CDP client the gate polls through |
