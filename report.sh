@@ -27,5 +27,14 @@ END=$(stat -c %Y "$L"/smoke-$NAME-*.log 2>/dev/null | sort -n | tail -1)
 [ -z "$END" ] && END=$START
 WALL=$(( (${END:-0} - ${START:-0}) / 60 )); [ "$WALL" -lt 0 ] && WALL=0
 
-LINE="$QUANT / $DRAFTER / $EFFORT / ${WALL}min / static $STATIC / $SOAK / $PLAYTEST — $RIG"
+# behavior probe verdicts (v2.4: written by the runner on every SMOKE-OK cell)
+PLOG="$L/probe-$NAME.log"
+[ -r "$B/probe-$NAME.log" ] && PLOG="$B/probe-$NAME.log"
+PSERVE=$(grep -m1 '^SERVE ' "$PLOG" 2>/dev/null | cut -d' ' -f2-)
+PREFL=$(grep -m1 '^REFLECTION ' "$PLOG" 2>/dev/null | cut -d' ' -f2-)
+RT=""
+[ -n "$PSERVE" ] && RT="$RT serve:$PSERVE"
+[ -n "$PREFL" ] && RT="$RT refl:$PREFL"
+
+LINE="$QUANT / $DRAFTER / $EFFORT / ${WALL}min / static $STATIC / $SOAK${RT:+ /$RT} / $PLAYTEST — $RIG"
 echo "$LINE" | tee "$L/RESULT-$NAME.txt"
