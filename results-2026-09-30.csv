@@ -1,0 +1,7 @@
+engine,quant,battery_serial_tps,battery_mtp_tps,depth38k_best_tps,prefill_pp8192,prefill_pp32768,ppl_own_method,static_v2_12_cells,agent_walls,notes
+halogen-0.15.1-native,v2.hgn (own),33.4,51.4,37.8 (mtp),1531,1484,3.928 (halogen ppl mode),17/14/16 (+17 high),13/11/10 min (+22 high),"closed, docker; 62GiB pinned + 47.7GB table streamed"
+gufo-0.3.0,UD-Q4_K_XL,24.1,33.8,26.7 (mtp),~1100-1200 (ttft),~1100-1200 (ttft),n/a (no ppl tool),16/17/17 (+15 high),7/7/8 min (+6 high),"MIT, container; adaptive MTP, 84% acceptance in-cell"
+nathan-v0.7.6.1,UD-IQ4_XS,27.1,34.6,23.5 (serial),696,655,pending build,"18/15/14/17 (v2_12, v075)",11-14 min,"open vulkan; json mode, any quant"
+halo-box-strix-llama,UD-IQ4_XS,23.7,36.4 (nonce-clean spec),25-30 (nonce depth),841,891,4.7155,not run,not run,open rocm; combined mtp+ngram drafter
+halogen-0.13.8-gguf,UD-IQ4_XS,24.0,33.2,25.5 (mtp),1201,1346,3.977 (halogen ppl mode),17/16/14 (walls 38-56min),38-56 min,gguf mode decode -28% vs native
+pwilkin-fork,UD-IQ4_XS,21.9,n/a,17.7 (serial),550,447,4.7140,not run,not run,EXCLUDED from comparisons per user; env-gate corruption bug documented
