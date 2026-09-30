@@ -19,3 +19,4 @@
 - v2.4 report.sh: the one-comment line now carries the behavior-probe verdicts (serve/refl) from the runner-written probe log; runtime status is no longer optional context.
 - v2.1 behavior probe: full contract checklist (menu start, serve gate, launch-on-Space, pad reflection, ball-loss outcome, brick reflection) with guarded accessors, window-scan ball fallback, DOM game-over signal; RULES line carries per-rule verdicts + tested/passed score.
 - v2.2 behavior probe: pacing check (~420 px/s), tri-ball last-ball rule and laser arm/fire (conditional on spawn accessors), shop-persistence via reload boot-branch, default wait raised to 45s.
+- v2.3 behavior probe: broad spawn-accessor scan (any module/window export matching spawn/drop/powerup) for tri-ball and laser rules; passive visual brick fallback via canvas pixel-diff for closure-hidden builds; parse-serve-log.py added; power-sample.sh added.

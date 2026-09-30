@@ -1,6 +1,6 @@
 83143782d0994e67f1c06dd3626ed177  contract.txt
 820534e0fda79658203ab37365a0ed14  game-score.py
-0fcdea9af5ba94b3328c3d887089c6a7  behavior-probe.js
+3c611e3f62159d268ecbfbe846a3e0a5  behavior-probe.js
 234ace14c177b718a76b5f2f23f8f94c  behavior-probe.sh
 a04697a05864e419f38ca6e5565f764d  smoke-gate.sh
 e64d0e7c4177cf4798cde5c92111dfaa  wsmin.js
@@ -10,3 +10,6 @@ ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 dd220dd454063f074ac25bb5a21fc59d  report.sh
 ed56c683fba6ff4cf3400ea7eb21730e  README.md
 6fc177d8d14b7ca741736ed316bc55a7  prompt-multi-v2_12.txt
+034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
+6a26140eb9d397405acf63609889f0b8  power-sample.sh
+26cb7a853e1ada1bf5f0979e961c4762  results-2026-09-30.csv

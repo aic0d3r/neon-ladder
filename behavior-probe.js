@@ -131,6 +131,22 @@
       const Cfg = find(['CONFIG', 'CFG']) || {};
       const radius = (Cfg.BALL && Cfg.BALL.RADIUS) || Cfg.BALL_RADIUS || Cfg.BALL_R || 7;
       const ball = getBall();
+      if ((!arr || !arr.length)) {
+        const cv = document.querySelector('canvas');
+        if (cv && cv.getContext) {
+          const ctx2 = cv.getContext('2d');
+          const sig = () => { try { const d = ctx2.getImageData(0, 0, cv.width, Math.floor(cv.height * 0.45)).data; let c = 0; for (let i = 0; i < d.length; i += 64) if ((d[i] + d[i+1] + d[i+2]) > 90) c++; return c; } catch (e) { return -1; } };
+          const before = sig();
+          if (before > 0) {
+            if (ball) { ball.x = cv.width / 2; ball.y = cv.height * 0.12; ball.vx = 6; ball.vy = -7; }
+            else { key(' ', 'Space'); }
+            await sleep(1500);
+            const after = sig();
+            if (after >= 0 && Math.abs(before - after) > 40) out.brickReflect = 'visual';
+            out.brickDetail = { visualBefore: before, visualAfter: after };
+          }
+        }
+      }
       if (arr && arr.length && ball) {
         const alive = arr.filter((x) => x && x.alive !== false && typeof x.y === 'number');
         const br = alive.slice().sort((a, b) => b.y - a.y)[0];
@@ -223,16 +239,34 @@
     // RULE tri-ball -> game over only on LAST ball (needs a spawnable powerup).
     out.lastBall = 'n/a';
     try {
-      const Powerups = find(['Powerups', 'powerups', 'PowerUp', 'Powerup']);
+      const findSpawn = () => {
+        const cands = [], seen = new Set();
+        const scan = (obj, tag) => {
+          if (!obj || (typeof obj !== 'object' && typeof obj !== 'function') || seen.has(obj)) return;
+          seen.add(obj);
+          for (const k of Object.keys(obj)) {
+            if (typeof obj[k] === 'function' && /spawn|drop|addpower|powerup/i.test(k)) cands.push(obj[k].bind(obj));
+          }
+        };
+        for (const n of ['Powerups', 'powerups', 'PowerUp', 'Powerup', 'Balls', 'Bricks', 'Game', 'game', 'States', 'Paddle', 'main']) { try { scan(eval(n), n); } catch (e) {} }
+        for (const wk of Object.keys(window)) { try { if (/power|drop|up$/i.test(wk) && wk.length < 24) scan(window[wk], wk); } catch (e) {} }
+        return cands;
+      };
+      const spawns = findSpawn();
       let spawnFn = null;
-      if (Powerups) for (const k of ['spawn', 'add', 'drop', 'spawnRandom', 'spawnAt']) { if (typeof Powerups[k] === 'function') { spawnFn = Powerups[k].bind(Powerups); break; } }
       const Cfg2 = find(['CONFIG', 'CFG']) || {};
       const H = (Cfg2.CANVAS && Cfg2.CANVAS.HEIGHT) || Cfg2.HEIGHT || 720;
       if (spawnFn) {
         const paddle = find(['Paddle', 'paddle']) || null;
         const px = paddle ? (num(paddle.x) || 0) + (num(paddle.w) || 80) / 2 : 400;
         let spawned = false;
-        try { spawnFn('triball', px, H * 0.35); spawned = true; } catch (e) { try { spawnFn(px, H * 0.35); spawned = true; } catch (e2) {} }
+        for (const fn of spawns) {
+          for (const args of [['triball', px, H * 0.35], ['tri', px, H * 0.35], [px, H * 0.35]]) {
+            try { fn(...args); spawned = true; } catch (e) {}
+            if (spawned) break;
+          }
+          if (spawned) break;
+        }
         if (spawned) {
           for (let i = 0; i < 25; i++) { await sleep(100); if ((getBallCount()) >= 3) break; }
           const c = getBallCount();
@@ -260,15 +294,24 @@
     // RULE laser: arm then fire (needs a spawnable powerup).
     out.laser = 'n/a';
     try {
-      const Powerups = find(['Powerups', 'powerups', 'PowerUp', 'Powerup']);
+      const findSpawn2 = () => {
+        const cands = [], seen = new Set();
+        const scan = (obj) => {
+          if (!obj || (typeof obj !== 'object' && typeof obj !== 'function') || seen.has(obj)) return;
+          seen.add(obj);
+          for (const k of Object.keys(obj)) if (typeof obj[k] === 'function' && /spawn|drop|addpower|powerup/i.test(k)) cands.push(obj[k].bind(obj));
+        };
+        for (const n of ['Powerups', 'powerups', 'PowerUp', 'Powerup', 'Game', 'game', 'Paddle']) { try { scan(eval(n)); } catch (e) {} }
+        for (const wk of Object.keys(window)) { try { if (/power|drop|up$/i.test(wk) && wk.length < 24) scan(window[wk]); } catch (e) {} }
+        return cands;
+      };
+      const spawns2 = findSpawn2();
       const Paddle = find(['Paddle', 'paddle']);
-      let spawnFn = null;
-      if (Powerups) for (const k of ['spawn', 'add', 'drop']) { if (typeof Powerups[k] === 'function') { spawnFn = Powerups[k].bind(Powerups); break; } }
       const Cfg3 = find(['CONFIG', 'CFG']) || {};
       const H3 = (Cfg3.CANVAS && Cfg3.CANVAS.HEIGHT) || Cfg3.HEIGHT || 720;
-      if (spawnFn && Paddle) {
+      if (spawns2.length && Paddle) {
         const px = (num(Paddle.x) || 0) + (num(Paddle.w) || 80) / 2;
-        try { spawnFn('laser', px, H3 * 0.4); } catch (e) { try { spawnFn(px, H3 * 0.4); } catch (e2) {} }
+        for (const fn of spawns2) { for (const args of [['laser', px, H3 * 0.4], [px, H3 * 0.4]]) { try { fn(...args); } catch (e) {} } }
         for (let i = 0; i < 25; i++) { await sleep(100); if (num(Paddle.y) !== null) { const py = num(Paddle.y), cap = null; break; } }
         key('ArrowLeft', 'ArrowLeft');
         await sleep(600);
