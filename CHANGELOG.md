@@ -17,3 +17,4 @@
 - A/B (projector GPU vs CPU): no decode impact (25.8 vs 26.5 t/s, acc 0.475 both), so vision is free on this stack.
 - v2.12 prompt checked in as the canonical bench prompt (`prompt-multi-v2_12.txt`, md5-frozen in MANIFEST). Adds MENU/START RULE, SERVE RULE, and the verify-input-wiring clause over v2_9. All published cells ran v2_9; runs on v2_12 start a new comparability group.
 - v2.4 report.sh: the one-comment line now carries the behavior-probe verdicts (serve/refl) from the runner-written probe log; runtime status is no longer optional context.
+- v2.1 behavior probe: full contract checklist (menu start, serve gate, launch-on-Space, pad reflection, ball-loss outcome, brick reflection) with guarded accessors, window-scan ball fallback, DOM game-over signal; RULES line carries per-rule verdicts + tested/passed score.

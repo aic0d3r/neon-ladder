@@ -36,19 +36,25 @@ print("probe:", json.dumps(d))
 auto, stuck = d.get("autoLaunch"), d.get("stuck")
 if not d.get("serveTestValid"):
     serve = "N/A(no Enter start, state=%s)" % d.get("stateAfterSpaceStart", d.get("stateAfterEnter"))
-elif auto:
-    serve = "FAIL(auto-launch)"
-elif stuck is True:
+elif d.get("serveGate") is True and d.get("launchOnSpace") is True:
     serve = "PASS"
+elif d.get("serveGate") is True:
+    serve = "FAIL(no launch on Space)"
+elif d.get("serveGate") is False:
+    serve = "FAIL(auto-launch)"
 else:
-    serve = "N/A(stuck=%s)" % stuck
-refl = d.get("reflect") or {}
-if refl:
-    reflect = "PASS" if refl.get("bounced") else "FAIL(no bounce, passedBrick=%s destroyed=%s)" % (refl.get("passedBrick"), refl.get("destroyed"))
-elif d.get("reflectErr"):
-    reflect = "ERROR " + str(d["reflectErr"])
+    serve = "N/A(ball=%s)" % d.get("nBalls")
+br = d.get("brickReflect")
+if br is True:
+    reflect = "PASS"
+elif br is False:
+    bd = d.get("brickDetail") or {}
+    reflect = "FAIL(no bounce, passedBrick=%s destroyed=%s)" % (bd.get("passed"), bd.get("destroyed"))
 else:
     reflect = "N/A"
+rules = d.get("rules") or {}
+compact = " ".join("%s=%s" % (k, ("PASS" if (v is True or v in ("gameover", "serve-reentry")) else ("n/a" if v in ("n/a", None) else "FAIL"))) for k, v in rules.items())
+print("RULES", d.get("rulesScore", "?"), compact)
 print("SERVE", serve)
 print("REFLECTION", reflect)
 PYEOF
