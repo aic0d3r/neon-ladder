@@ -11,7 +11,7 @@
 # Usage: behavior-probe.sh <build-dir> [wait-ms]
 set -u
 B=$(readlink -f "$1"); [ -f "$B/index.html" ] || { echo "BEHAVE-FAIL no index.html"; exit 1; }
-WAIT=${2:-8000}
+WAIT=${2:-45000}
 G=$(dirname "$(readlink -f "$0")")
 T=$(mktemp -d /tmp/behave.XXXX)
 cp -r "$B/." "$T/"

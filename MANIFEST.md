@@ -1,7 +1,7 @@
 83143782d0994e67f1c06dd3626ed177  contract.txt
 820534e0fda79658203ab37365a0ed14  game-score.py
-dc21e6cbfcfbd47a46bc3f09490007bc  behavior-probe.js
-b1a1cb7e2cc78e443ad124dfa74632c3  behavior-probe.sh
+0fcdea9af5ba94b3328c3d887089c6a7  behavior-probe.js
+234ace14c177b718a76b5f2f23f8f94c  behavior-probe.sh
 a04697a05864e419f38ca6e5565f764d  smoke-gate.sh
 e64d0e7c4177cf4798cde5c92111dfaa  wsmin.js
 c7d3ea7eec05c971454e420aff64d256  cdp.js

@@ -6,6 +6,20 @@
    per-rule verdict map in out.rules. */
 (function () {
   const out = window.__bp = { phase: 'boot' };
+  // v2.2 shop-persistence boot branch: sessionStorage flag set before a reload.
+  try {
+    if (sessionStorage.getItem('__bp2') === '1') {
+      sessionStorage.removeItem('__bp2');
+      let found = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (/credit|coin|money|cash/i.test(k)) { found = { key: k, value: localStorage.getItem(k) }; break; }
+      }
+      out.shopPersist = found ? (Number(found.value) === 777 ? 'pass' : 'changed:' + found.value) : 'no-key';
+      out.phase = 'done-shop';
+      return;
+    }
+  } catch (e) {}
   function find(names) {
     for (const n of names) { try { const v = eval(n); if (v && typeof v === 'object') return v; } catch (e) {} }
     return null;
@@ -65,6 +79,7 @@
     out.stateAfterEnter = after;
     out.serveTestValid = out.menuStart && !!bEarly;
 
+    const getBallCount = () => { try { const B = Balls; if (!B) return 0; if (Array.isArray(B)) return B.filter((b) => b && num(b.x) !== null).length; if (typeof B.count === 'function') return B.count(); for (const k of ['list','balls','active','items','all']) { const v = B[k]; const arr = typeof v === 'function' ? (function(){ try { return v(); } catch (e) { return null; } })() : v; if (Array.isArray(arr)) return arr.filter((x) => x && num(x.x) !== null).length; } } catch (e) {} return getBall() ? 1 : 0; };
     let b0 = bEarly;
     out.nBalls = b0 ? 1 : 0;
 
@@ -184,7 +199,96 @@
       }
     } catch (e) { out.lossErr = String(e).slice(0, 100); }
 
-    const rules = { menuStart: out.menuStart, serveGate: out.serveGate, launchOnSpace: out.launchOnSpace, padReflect: out.padReflect, lossHandled: out.lossHandled, brickReflect: out.brickReflect };
+
+    // RULE pacing: launched ball should run ~420 px/s (BALL_BASE_SPEED 7 at 60fps).
+    out.pacing = 'n/a';
+    try {
+      const ball = getBall();
+      if (ball) {
+        key(' ', 'Space');
+        let launchedAt = null, y0 = null;
+        for (let i = 0; i < 20; i++) { await sleep(50); const b = getBall(); if (b && num(b.vy) !== 0) { launchedAt = Date.now(); y0 = num(b.y); break; } }
+        if (launchedAt !== null) {
+          await sleep(400);
+          const b = getBall();
+          if (b && num(b.y) !== null && y0 !== null) {
+            const v = Math.abs(num(b.y) - y0) / ((Date.now() - launchedAt - 400) / 1000 + 0.4);
+            out.pacing = (v > 300 && v < 560) ? 'pass' : 'off:' + Math.round(v);
+            out.pacingPx = Math.round(v);
+          }
+        }
+      }
+    } catch (e) { out.pacingErr = String(e).slice(0, 80); }
+
+    // RULE tri-ball -> game over only on LAST ball (needs a spawnable powerup).
+    out.lastBall = 'n/a';
+    try {
+      const Powerups = find(['Powerups', 'powerups', 'PowerUp', 'Powerup']);
+      let spawnFn = null;
+      if (Powerups) for (const k of ['spawn', 'add', 'drop', 'spawnRandom', 'spawnAt']) { if (typeof Powerups[k] === 'function') { spawnFn = Powerups[k].bind(Powerups); break; } }
+      const Cfg2 = find(['CONFIG', 'CFG']) || {};
+      const H = (Cfg2.CANVAS && Cfg2.CANVAS.HEIGHT) || Cfg2.HEIGHT || 720;
+      if (spawnFn) {
+        const paddle = find(['Paddle', 'paddle']) || null;
+        const px = paddle ? (num(paddle.x) || 0) + (num(paddle.w) || 80) / 2 : 400;
+        let spawned = false;
+        try { spawnFn('triball', px, H * 0.35); spawned = true; } catch (e) { try { spawnFn(px, H * 0.35); spawned = true; } catch (e2) {} }
+        if (spawned) {
+          for (let i = 0; i < 25; i++) { await sleep(100); if ((getBallCount()) >= 3) break; }
+          const c = getBallCount();
+          if (c >= 3) {
+            let losses = 0;
+            for (let r = 0; r < 6; r++) {
+              const b = getBall(); if (!b) break;
+              b.y = 4000; b.vy = 20;
+              let over = false, re = false;
+              for (let i = 0; i < 25; i++) {
+                await sleep(100);
+                const st = String(state());
+                if (st.includes('over') || /game\s*over/.test(domText())) { over = true; break; }
+                if (getBallCount() >= 1 && r < 5) { re = true; break; }
+              }
+              losses++;
+              if (over) break;
+            }
+            out.lastBall = (getBallCount() === 0 && String(state()).toLowerCase().includes('over')) || /game\s*over/.test(domText()) ? 'pass-after-' + losses : 'broken';
+          }
+        }
+      }
+    } catch (e) { out.lastBallErr = String(e).slice(0, 80); }
+
+    // RULE laser: arm then fire (needs a spawnable powerup).
+    out.laser = 'n/a';
+    try {
+      const Powerups = find(['Powerups', 'powerups', 'PowerUp', 'Powerup']);
+      const Paddle = find(['Paddle', 'paddle']);
+      let spawnFn = null;
+      if (Powerups) for (const k of ['spawn', 'add', 'drop']) { if (typeof Powerups[k] === 'function') { spawnFn = Powerups[k].bind(Powerups); break; } }
+      const Cfg3 = find(['CONFIG', 'CFG']) || {};
+      const H3 = (Cfg3.CANVAS && Cfg3.CANVAS.HEIGHT) || Cfg3.HEIGHT || 720;
+      if (spawnFn && Paddle) {
+        const px = (num(Paddle.x) || 0) + (num(Paddle.w) || 80) / 2;
+        try { spawnFn('laser', px, H3 * 0.4); } catch (e) { try { spawnFn(px, H3 * 0.4); } catch (e2) {} }
+        for (let i = 0; i < 25; i++) { await sleep(100); if (num(Paddle.y) !== null) { const py = num(Paddle.y), cap = null; break; } }
+        key('ArrowLeft', 'ArrowLeft');
+        await sleep(600);
+        key(' ', 'Space');
+        await sleep(300);
+        const txt = domText();
+        const armed = /laser/i.test(txt);
+        out.laser = armed ? 'pass-armed' : 'fired-unverifiable';
+      }
+    } catch (e) { out.laserErr = String(e).slice(0, 80); }
+
+    // RULE shop persistence: set a credit key, reload; the boot branch verifies.
+    out.shopPersist = 'n/a';
+    try {
+      let ck = null;
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/credit|coin|money|cash/i.test(k)) { ck = k; break; } }
+      if (ck) { localStorage.setItem(ck, '777'); sessionStorage.setItem('__bp2', '1'); setTimeout(() => location.reload(), 50); return; }
+    } catch (e) { out.shopErr = String(e).slice(0, 80); }
+
+    const rules = { menuStart: out.menuStart, serveGate: out.serveGate, launchOnSpace: out.launchOnSpace, padReflect: out.padReflect, lossHandled: out.lossHandled, brickReflect: out.brickReflect, pacing: out.pacing === 'pass' ? true : out.pacing, lastBall: out.lastBall, shopPersist: out.shopPersist };
     let pass = 0, tested = 0;
     for (const k of Object.keys(rules)) {
       const v = rules[k];
