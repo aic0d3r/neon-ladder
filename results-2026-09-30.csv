@@ -5,3 +5,4 @@ nathan-v0.7.6.1,UD-IQ4_XS,27.1,34.6,23.5 (serial),696,655,pending build,"18/15/1
 halo-box-strix-llama,UD-IQ4_XS,23.7,36.4 (nonce-clean spec),25-30 (nonce depth),841,891,4.7155,not run,not run,open rocm; combined mtp+ngram drafter
 halogen-0.13.8-gguf,UD-IQ4_XS,24.0,33.2,25.5 (mtp),1201,1346,3.977 (halogen ppl mode),17/16/14 (walls 38-56min),38-56 min,gguf mode decode -28% vs native
 pwilkin-fork,UD-IQ4_XS,21.9,n/a,17.7 (serial),550,447,4.7140,not run,not run,EXCLUDED from comparisons per user; env-gate corruption bug documented
+halogen-0.15.1-gguf,UD-IQ4_XS,23.43,38.48,24.5 (mtp),~1270 (ttft),~1330 (ttft),3.977 (0.13.8 engine),"16 (med-e, v2.12 group on 0.13.8)",6 min (med-f was 0.13.8),"same-weights arm: serial ties gufo, mtp/prefill +14-16%"
