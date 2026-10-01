@@ -23,3 +23,4 @@
 - v3 prompt checked in (prompt-multi-v3.txt): Siege Protocol - drifting armored rows, volatile chain (3 deep), volatile regen with HUD countdown, paddle shrink per level, multiplier reset on paddle touch, level-3 armored-row gate.
 - v2.4.1: import os fix in injector; V3 env gate for drift/regen rules (v2_12 builds no longer penalized); lossy second-load merge fixed (full first-run state stashed). Verified: good build 7/7 visualRender PASS, gufo med-f 6/7 visualRender FAIL (intermittent blank gameplay screen - the build the user caught).
 - v2.4.2: second-load check now replays the player path (Enter -> sample -> Space -> sample, retry once) instead of sampling the menu canvas - DOM-menu builds were false-flagged flaky. Verified: 5 previously flagged builds PASS, med-f still FAIL.
+- toolcall-test.py (structured tool-call reliability, n-request JSON validation) and c4-test.py (concurrent streaming aggregate t/s) checked in.

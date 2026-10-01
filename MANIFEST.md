@@ -13,5 +13,7 @@ ed56c683fba6ff4cf3400ea7eb21730e  README.md
 5e6f23cd6608abca9fc2066cc88b4c29  prompt-multi-v3.txt
 034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
 6a26140eb9d397405acf63609889f0b8  power-sample.sh
-26cb7a853e1ada1bf5f0979e961c4762  results-2026-09-30.csv
+dfe71fced247171b90042f17ac0328f5  results-2026-09-30.csv
 6859f3da88c52860e19e47adaabcbb21  shot.js
+49427e9ff43a1bfa2b94fa69e3663d30  toolcall-test.py
+0ebbb82a4f9f93d1ca5f31174d482743  c4-test.py
