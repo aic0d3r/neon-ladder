@@ -22,6 +22,7 @@
         out.visualFlaky = !!first.visualRender && !secondOK;
         for (const k of Object.keys(first)) if (!(k in out)) out[k] = first[k];
         out.rules = first.rules || {};
+        if ('visualRender' in out.rules) out.rules.visualRender = out.visualRender;
         out.rulesScore = String(first.rulesScore || '?') + (out.visualFlaky ? ' +flaky-render' : '');
         out.phase = 'done';
       })();
