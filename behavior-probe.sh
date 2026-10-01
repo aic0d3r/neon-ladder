@@ -16,11 +16,12 @@ G=$(dirname "$(readlink -f "$0")")
 T=$(mktemp -d /tmp/behave.XXXX)
 cp -r "$B/." "$T/"
 python3 - "$T/index.html" "$G/behavior-probe.js" <<'PYEOF'
-import sys
+import os, sys
 page, probe = sys.argv[1], open(sys.argv[2]).read()
 s = open(page).read()
 assert '</body>' in s, 'no </body>'
-open(page, 'w').write(s.replace('</body>', '<script>\n' + probe + '\n</script>\n</body>'))
+v3 = "window.__bpV3 = %s;\n" % ("true" if os.environ.get("V3") == "1" else "false")
+open(page, 'w').write(s.replace('</body>', '<script>\n' + v3 + probe + '\n</script>\n</body>'))
 PYEOF
 SERIES=$(timeout $((WAIT / 1000 + 40)) node "$G/wsmin.js" "file://$T/index.html" 'window.__bp?JSON.stringify(window.__bp):"{}"' "$WAIT" 1000 2>/dev/null | grep '^POLL' | tail -1)
 rm -rf "$T"

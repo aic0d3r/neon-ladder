@@ -8,6 +8,27 @@
   const out = window.__bp = { phase: 'boot' };
   // v2.2 shop-persistence boot branch: sessionStorage flag set before a reload.
   try {
+    if (sessionStorage.getItem('__bp2v') === '1') {
+      sessionStorage.removeItem('__bp2v');
+      (async () => {
+        const cv0 = document.querySelector('canvas');
+        const bright0 = () => { try { const ctx0 = cv0.getContext('2d'); const d0 = ctx0.getImageData(0, 0, cv0.width, cv0.height).data; let c0 = 0; for (let i = 0; i < d0.length; i += 48) if ((d0[i] + d0[i+1] + d0[i+2]) > 90) c0++; return c0; } catch (e) { return -1; } };
+        const s1 = bright0(); await new Promise((r) => setTimeout(r, 1200)); const s2 = bright0();
+        out.secondLoadPixels = [s1, s2];
+        let first = {};
+        try { first = JSON.parse(sessionStorage.getItem('__bp1') || '{}'); } catch (e) {}
+        const secondOK = (s1 > 500 || s2 > 500);
+        out.visualRender = !!first.visualRender && secondOK;
+        out.visualFlaky = !!first.visualRender && !secondOK;
+        for (const k of Object.keys(first)) if (!(k in out)) out[k] = first[k];
+        out.rules = first.rules || {};
+        out.rulesScore = String(first.rulesScore || '?') + (out.visualFlaky ? ' +flaky-render' : '');
+        out.phase = 'done';
+      })();
+      return;
+    }
+  } catch (e) {}
+  try {
     if (sessionStorage.getItem('__bp2') === '1') {
       sessionStorage.removeItem('__bp2');
       let found = null;
@@ -62,6 +83,9 @@
       return null;
     };
     out.stateBefore = state();
+    const cv = document.querySelector('canvas');
+    const bright = () => { try { const ctx2 = cv.getContext('2d'); const d = ctx2.getImageData(0, 0, cv.width, cv.height).data; let c = 0; for (let i = 0; i < d.length; i += 48) if ((d[i] + d[i+1] + d[i+2]) > 90) c++; return c; } catch (e) { return -1; } };
+    out.menuPixels = cv ? bright() : -1;
     const ballBefore = getBall();
     const t0 = Date.now();
     key('Enter', 'Enter');
@@ -112,6 +136,11 @@
         out.launchOnSpace = launched;
       } else out.launchOnSpace = 'n/a';
     } else { out.serveGate = 'n/a'; out.launchOnSpace = 'n/a'; }
+    const samples = [];
+    for (let i = 0; i < 5; i++) { await sleep(300); samples.push(cv ? bright() : -1); }
+    out.playPixels = Math.max(...samples);
+    out.playSamples = samples;
+    out.visualRender = (out.menuPixels > 500) ? (Math.max(...samples) > 500) : (Math.max(...samples) > 200);
 
     // RULE brick reflection (existing test, guarded)
     out.brickReflect = 'n/a';
@@ -161,10 +190,30 @@
             samples.push({ y: num(nb.y), vy: num(nb.vy) });
           }
           out.brickReflect = samples.some((s2) => s2.vy !== null && s2.vy > 0);
+          await sleep(400);
+          if (window.__bpV3) out.regenHud = /regen/i.test(domText()) ? 'pass' : 'none';
           out.brickDetail = { passed: samples.some((s2) => s2.y !== null && s2.y < br.y), destroyed: before - arr.filter((x) => x && x.alive !== false).length };
         }
       }
     } catch (e) { out.brickErr = String(e).slice(0, 100); }
+
+    // v3 RULE drift: armored bricks move horizontally.
+    out.drift = 'n/a';
+    try {
+      if (!window.__bpV3) throw 'skip-v2';
+      const BricksD = find(['Bricks', 'BrickManager']);
+      let arrD = BricksD ? (BricksD.list || BricksD.bricks || BricksD.grid) : null;
+      if (arrD && !Array.isArray(arrD)) arrD = Object.values(arrD);
+      if (arrD) arrD = arrD.flat(3);
+      if ((!arrD || !arrD.length) && BricksD && typeof BricksD.queryRect === 'function') { try { arrD = BricksD.queryRect(0, 0, 4000, 4000); } catch (e) {} }
+      const armored = (arrD || []).filter((x) => x && x.alive !== false && num(x.x) !== null && /arm|red|hp|hits/i.test(JSON.stringify(x).slice(0, 200)));
+      const target = armored[0] || (arrD || []).find((x) => x && x.alive !== false && num(x.x) !== null);
+      if (target) {
+        const x0 = num(target.x);
+        await sleep(1000);
+        out.drift = Math.abs(num(target.x) - x0) > 6 ? 'pass' : 'fail';
+      }
+    } catch (e) { out.driftErr = String(e).slice(0, 80); }
 
     // RULE pad reflection: teleport ball just above the pad, falling.
     out.padReflect = 'n/a';
@@ -203,7 +252,7 @@
       if (ball) {
         ball.y = 4000; ball.vy = 20;
         let outcome = null;
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 60; i++) {
           await sleep(100);
           const st = String(state());
           if (st.includes('over') || /game\s*over/.test(domText())) { outcome = 'gameover'; break; }
@@ -331,7 +380,7 @@
       if (ck) { localStorage.setItem(ck, '777'); sessionStorage.setItem('__bp2', '1'); setTimeout(() => location.reload(), 50); return; }
     } catch (e) { out.shopErr = String(e).slice(0, 80); }
 
-    const rules = { menuStart: out.menuStart, serveGate: out.serveGate, launchOnSpace: out.launchOnSpace, padReflect: out.padReflect, lossHandled: out.lossHandled, brickReflect: out.brickReflect, pacing: out.pacing === 'pass' ? true : out.pacing, lastBall: out.lastBall, shopPersist: out.shopPersist };
+    const rules = { menuStart: out.menuStart, serveGate: out.serveGate, launchOnSpace: out.launchOnSpace, padReflect: out.padReflect, lossHandled: out.lossHandled, brickReflect: out.brickReflect, pacing: out.pacing === 'pass' ? true : out.pacing, lastBall: out.lastBall, shopPersist: out.shopPersist, drift: out.drift, regenHud: out.regenHud, visualRender: out.visualRender };
     let pass = 0, tested = 0;
     for (const k of Object.keys(rules)) {
       const v = rules[k];
@@ -342,6 +391,7 @@
     }
     out.rules = rules;
     out.rulesScore = `${pass}/${tested}`;
+    try { sessionStorage.setItem('__bp1', JSON.stringify(out)); sessionStorage.setItem('__bp2v', '1'); setTimeout(() => location.reload(), 80); return; } catch (e) {}
     out.phase = 'done';
   }
 
