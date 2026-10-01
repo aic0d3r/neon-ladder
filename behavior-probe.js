@@ -13,7 +13,14 @@
       (async () => {
         const cv0 = document.querySelector('canvas');
         const bright0 = () => { try { const ctx0 = cv0.getContext('2d'); const d0 = ctx0.getImageData(0, 0, cv0.width, cv0.height).data; let c0 = 0; for (let i = 0; i < d0.length; i += 48) if ((d0[i] + d0[i+1] + d0[i+2]) > 90) c0++; return c0; } catch (e) { return -1; } };
-        const s1 = bright0(); await new Promise((r) => setTimeout(r, 1200)); const s2 = bright0();
+        const press0 = (k, c) => { for (const t of [document, window]) { t.dispatchEvent(new KeyboardEvent('keydown', { key: k, code: c, bubbles: true })); t.dispatchEvent(new KeyboardEvent('keyup', { key: k, code: c, bubbles: true })); } };
+        press0('Enter', 'Enter');
+        await new Promise((r) => setTimeout(r, 1500));
+        let s1 = bright0();
+        press0(' ', 'Space');
+        await new Promise((r) => setTimeout(r, 800));
+        let s2 = bright0();
+        if (s1 < 500 && s2 < 500) { press0('Enter', 'Enter'); await new Promise((r) => setTimeout(r, 1200)); press0(' ', 'Space'); await new Promise((r) => setTimeout(r, 800)); s1 = Math.max(s1, bright0()); await new Promise((r) => setTimeout(r, 300)); s2 = Math.max(s2, bright0()); }
         out.secondLoadPixels = [s1, s2];
         let first = {};
         try { first = JSON.parse(sessionStorage.getItem('__bp1') || '{}'); } catch (e) {}
