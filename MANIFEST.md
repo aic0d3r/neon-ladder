@@ -10,6 +10,7 @@ ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 dd220dd454063f074ac25bb5a21fc59d  report.sh
 ed56c683fba6ff4cf3400ea7eb21730e  README.md
 6fc177d8d14b7ca741736ed316bc55a7  prompt-multi-v2_12.txt
+5e6f23cd6608abca9fc2066cc88b4c29  prompt-multi-v3.txt
 034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
 6a26140eb9d397405acf63609889f0b8  power-sample.sh
 26cb7a853e1ada1bf5f0979e961c4762  results-2026-09-30.csv
