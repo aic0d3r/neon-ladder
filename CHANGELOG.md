@@ -24,3 +24,4 @@
 - v2.4.1: import os fix in injector; V3 env gate for drift/regen rules (v2_12 builds no longer penalized); lossy second-load merge fixed (full first-run state stashed). Verified: good build 7/7 visualRender PASS, gufo med-f 6/7 visualRender FAIL (intermittent blank gameplay screen - the build the user caught).
 - v2.4.2: second-load check now replays the player path (Enter -> sample -> Space -> sample, retry once) instead of sampling the menu canvas - DOM-menu builds were false-flagged flaky. Verified: 5 previously flagged builds PASS, med-f still FAIL.
 - toolcall-test.py (structured tool-call reliability, n-request JSON validation) and c4-test.py (concurrent streaming aggregate t/s) checked in.
+- shot.js: mkdir -p the output dir before writing - the runner auto-shot silently failed on every fresh cell (screenshots/ never existed). Now creates it.

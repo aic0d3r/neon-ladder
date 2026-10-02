@@ -14,7 +14,7 @@ d338990b759cb147636ad8a7a0af48f6  README.md
 034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
 6a26140eb9d397405acf63609889f0b8  power-sample.sh
 dfe71fced247171b90042f17ac0328f5  results-2026-09-30.csv
-6859f3da88c52860e19e47adaabcbb21  shot.js
+1f51b24eb1a95bc57ed9cdd849b432f7  shot.js
 49427e9ff43a1bfa2b94fa69e3663d30  toolcall-test.py
 0ebbb82a4f9f93d1ca5f31174d482743  c4-test.py
 1ae36b054b4d9b40cf9ca7f784471c82  rag-index.py

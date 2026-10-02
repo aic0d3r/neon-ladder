@@ -77,7 +77,8 @@ await sleep(300);
     try{process.kill(-chrome.pid,'SIGKILL')}catch(e){} try{chrome.kill('SIGKILL')}catch(e){}
     process.exit(0);
   }
-  const shot=async(out)=>{ const r=await send('Page.captureScreenshot',{format:'jpeg',quality:80}); require('fs').writeFileSync(out,Buffer.from(r.result.data,'base64')); console.log('SHOT '+out); };
+  const fs=require('fs'), pth=require('path');
+  const shot=async(out)=>{ fs.mkdirSync(pth.dirname(out),{recursive:true}); const r=await send('Page.captureScreenshot',{format:'jpeg',quality:80}); fs.writeFileSync(out,Buffer.from(r.result.data,'base64')); console.log('SHOT '+out); };
   const press=(k,c)=>send('Runtime.evaluate',{expression:`[document,window].map(t=>{t.dispatchEvent(new KeyboardEvent('keydown',{key:'${k}',code:'${c}',bubbles:true}));t.dispatchEvent(new KeyboardEvent('keyup',{key:'${k}',code:'${c}',bubbles:true}))}),'ok'`,returnByValue:true});
   const OUT=process.argv[3];
   await sleep(1500); await shot(OUT+'-menu.jpg');
