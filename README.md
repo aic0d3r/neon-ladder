@@ -228,3 +228,12 @@ Semantic codebase search on the Ryzen AI NPU, beside a running Flash-Next server
 - `rag-query.py --query "..."` — embed query -> cosine top-k -> NPU rerank, ~100ms end-to-end
 - `extensions/npu-retrieval.ts` — pi extension: `codebase_search` tool + `/rag-index` command (install: copy to `~/.pi/agent/extensions/`)
 Requires halogen 0.16.0+ with `HALOGEN_NPU_MODELS=...,qwen3-embedding-0.6b,qwen3-reranker-0.6b`, the NPU device, and the fabric clock held (see repro/). Measured: 8/10 top-3 retrieval hits at ~100ms over this repo (2026-10-01).
+
+## Plug and play (pi extension, zero python at query time)
+
+Install: `cp extensions/npu-retrieval.ts ~/.pi/agent/extensions/` (pi autodiscovers it).
+Requirements: halogen 0.16+ NPU server on :8731 (embedder + reranker enabled).
+Usage: `/rag-index <dir>` once per repo (source files by default, `all` to include docs/tests),
+then the agent can call `codebase_search("full-sentence query")` mid-session. Tool-call telemetry
+lands in ~/.pi/agent/npu-retrieval-usage.log. Index format: `<repo>/.rag/{index.json,vectors.f32}`
+(written by rag-index.py or the /rag-index command - both interchange).

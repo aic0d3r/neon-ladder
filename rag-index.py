@@ -17,11 +17,9 @@ ap.add_argument("--base", default="http://127.0.0.1:8731")
 ap.add_argument("--chunk", type=int, default=1400, help="chars per chunk (~350 tok)")
 ap.add_argument("--exclude", default=r"(\.git|node_modules|__pycache__|screenshots|\.npz$)")
 ap.add_argument("--ext", default=".py,.md,.sh,.js,.ts,.json,.txt,.yaml,.yml,.toml")
+ap.add_argument("--src-only", action="store_true", help="skip docs/tests for where-is-it-implemented precision")
 a = ap.parse_args()
-try:
-    import numpy as np
-except ImportError:
-    sys.exit("numpy required: python3 -m pip install --user numpy")
+from array import array
 
 out = a.out or os.path.join(a.dir, ".npu-index.npz")
 exts = tuple(a.ext.split(","))
@@ -32,6 +30,8 @@ for dp, _, fns in os.walk(a.dir):
         continue
     for fn in fns:
         if not fn.endswith(exts) or fn.startswith("."):
+            continue
+        if a.src_only and (any(p in ("docs", "tests", "test") for p in dp.split(os.sep)) or fn.endswith(".md")):
             continue
         p = os.path.join(dp, fn)
         if excl and __import__("re").search(excl, p):
@@ -58,11 +58,20 @@ def embed_batch(texts):
     return [d["embedding"] for d in r["data"]]
 
 t0 = time.time()
-vecs = []
+flat = array("f")
+dims = None
 for i in range(0, len(chunks), 64):
-    vecs += embed_batch(chunks[i:i + 64])
+    for v in embed_batch(chunks[i:i + 64]):
+        if dims is None: dims = len(v)
+        flat.extend(v)
 dt = time.time() - t0
 toks = sum(len(c) for c in chunks) / 3.9
-np.savez_compressed(out, vectors=np.array(vecs, dtype=np.float32),
-                    chunks=np.array(chunks), srcs=np.array(srcs))
-print(f"indexed {len(chunks)} chunks ({toks:,.0f} tok) in {dt:.1f}s = {toks/dt:,.0f} tok/s -> {out}", file=sys.stderr)
+rag_dir = os.path.join(os.path.dirname(out) or ".", ".rag")
+os.makedirs(rag_dir, exist_ok=True)
+with open(os.path.join(rag_dir, "vectors.f32"), "wb") as f:
+    flat.tofile(f)
+with open(os.path.join(rag_dir, "index.json"), "w") as f:
+    json.dump({"dims": dims, "count": len(chunks),
+               "secs": round(dt, 1), "tokens": round(toks),
+               "chunks": chunks, "srcs": srcs}, f)
+print(f"indexed {len(chunks)} chunks ({toks:,.0f} tok) in {dt:.1f}s = {toks/dt:,.0f} tok/s -> {rag_dir}", file=sys.stderr)
