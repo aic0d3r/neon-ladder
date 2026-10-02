@@ -8,7 +8,7 @@ c7d3ea7eec05c971454e420aff64d256  cdp.js
 24bee5447e6c1b4f21031ea6a4e029c3  run.sh
 ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 dd220dd454063f074ac25bb5a21fc59d  report.sh
-ed56c683fba6ff4cf3400ea7eb21730e  README.md
+d338990b759cb147636ad8a7a0af48f6  README.md
 6fc177d8d14b7ca741736ed316bc55a7  prompt-multi-v2_12.txt
 5e6f23cd6608abca9fc2066cc88b4c29  prompt-multi-v3.txt
 034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
@@ -17,3 +17,6 @@ dfe71fced247171b90042f17ac0328f5  results-2026-09-30.csv
 6859f3da88c52860e19e47adaabcbb21  shot.js
 49427e9ff43a1bfa2b94fa69e3663d30  toolcall-test.py
 0ebbb82a4f9f93d1ca5f31174d482743  c4-test.py
+1ae36b054b4d9b40cf9ca7f784471c82  rag-index.py
+4eea393f92abeb6065ad72e530799442  rag-query.py
+140241e5a34e8618d567c8619b138d51  extensions/npu-retrieval.ts

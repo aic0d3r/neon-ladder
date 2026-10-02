@@ -220,3 +220,11 @@ Every row is a receipt from this harness. Playtest verdicts are the user's, reco
 - the [pi](https://github.com/earendil-works/pi) coding agent with a llama.cpp provider
 - a llama.cpp server with speculative decoding (DFlash2 or MTP capable)
 - extensions and skills are **not part of the protocol**. If yours inject context into sessions, disable them (`pi config`) or your numbers carry a variable the recipe does not account for
+
+## NPU retrieval toolkit (halogen 0.16+)
+
+Semantic codebase search on the Ryzen AI NPU, beside a running Flash-Next server:
+- `rag-index.py --dir <repo>` — chunk + embed a repo (qwen3-embedding-0.6b, ~5-6k tok/s) into `.npu-index.npz`
+- `rag-query.py --query "..."` — embed query -> cosine top-k -> NPU rerank, ~100ms end-to-end
+- `extensions/npu-retrieval.ts` — pi extension: `codebase_search` tool + `/rag-index` command (install: copy to `~/.pi/agent/extensions/`)
+Requires halogen 0.16.0+ with `HALOGEN_NPU_MODELS=...,qwen3-embedding-0.6b,qwen3-reranker-0.6b`, the NPU device, and the fabric clock held (see repro/). Measured: 8/10 top-3 retrieval hits at ~100ms over this repo (2026-10-01).
