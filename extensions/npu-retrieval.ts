@@ -52,6 +52,8 @@ export default function (pi: ExtensionAPI) {
 		execute: async (callId: string, args: { query: string; k?: number }) => {
 			const cwd = process.cwd();
 			const index = findIndex(cwd);
+			try { fs.appendFileSync(path.join(HOME, ".pi/agent/npu-retrieval-usage.log"),
+				JSON.stringify({ t: new Date().toISOString(), cwd, index: index || "NONE", query: args.query }) + "\n"); } catch {}
 			if (!index) {
 				return { content: [{ type: "text", text: "No .npu-index.npz found. Build one first: rag-index.py --dir <repo> (needs the halogen NPU server on :8731)." }] };
 			}
