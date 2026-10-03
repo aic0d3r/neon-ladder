@@ -2,13 +2,13 @@
 820534e0fda79658203ab37365a0ed14  game-score.py
 87de7b7515e3ade7f7428a41b9ccac4b  behavior-probe.js
 fc589e30b49c8c990eadd8a54f86d1ae  behavior-probe.sh
-a04697a05864e419f38ca6e5565f764d  smoke-gate.sh
+8455dfc44a50416ac41b78a660f4dc37  smoke-gate.sh
 e64d0e7c4177cf4798cde5c92111dfaa  wsmin.js
 c7d3ea7eec05c971454e420aff64d256  cdp.js
 24bee5447e6c1b4f21031ea6a4e029c3  run.sh
 ae9922dc36a78f871d6c0eebc9c2869b  soak-probe.sh
 dd220dd454063f074ac25bb5a21fc59d  report.sh
-186097cfb33605a8e0f7bc6d782b5208  README.md
+37856aecfe31384f72adcd591893dea7  README.md
 6fc177d8d14b7ca741736ed316bc55a7  prompt-multi-v2_12.txt
 5e6f23cd6608abca9fc2066cc88b4c29  prompt-multi-v3.txt
 034820ee38f6a7584c7c51bdfacf2e46  parse-serve-log.py
@@ -20,5 +20,6 @@ dfe71fced247171b90042f17ac0328f5  results-2026-09-30.csv
 0ebbb82a4f9f93d1ca5f31174d482743  c4-test.py
 b137db3b00deb6d502f5ce99f2be6bb9  rag-index.py
 4eea393f92abeb6065ad72e530799442  rag-query.py
-526e57e285f2738f17191a2fd1f4a4df  extensions/npu-retrieval.ts
+12ae4b7fb7899b81092ea207232ae740  extensions/npu-retrieval.ts
 2f071f6b26d61b679bce9291d4f0bf84  cap-eval.py
+9fc7c35234e77e291da1be6fec8ecee0  npu-bench.py

@@ -4,8 +4,25 @@
 # page survives the soak without reloading, the rAF loop and canvas draw-ops
 # keep advancing, and no fatal page error fires. Boot errors are fatal;
 # caught per-frame errors are warnings when the loop demonstrably survived.
-# Usage: smoke-gate.sh <build-dir> [soak-secs]   (env SOAK also works)
+# Usage: smoke-gate.sh [--fail-fast] <build-dir> [soak-secs]   (env SOAK, FAIL_FAST also work)
+#
+# --fail-fast: evaluate the live poll stream after every poll instead of only
+# after the soak is over. The first check that fails aborts the soak immediately
+# (poll client + browser are reaped) and the script exits non-zero right away,
+# echoing the failed check's name on a "FAILED-CHECK <name>" line. Without the
+# flag the soak always runs to completion and verdicts are unchanged.
 set -u
+FAIL_FAST=${FAIL_FAST:-0}
+_pos=()
+for _a in "$@"; do
+  case "$_a" in
+    --fail-fast) FAIL_FAST=1 ;;
+    -h|--help) echo "Usage: smoke-gate.sh [--fail-fast] <build-dir> [soak-secs]"; exit 0 ;;
+    *) _pos+=("$_a") ;;
+  esac
+done
+set -- ${_pos[@]+"${_pos[@]}"}
+[ $# -ge 1 ] || { echo "Usage: smoke-gate.sh [--fail-fast] <build-dir> [soak-secs]"; exit 2; }
 B=$(readlink -f "$1"); SOAK=${2:-${SOAK:-120}}
 G=$(dirname "$(readlink -f "$0")")
 T=$(mktemp -d /tmp/smoke.XXXX)   # disposable sandbox; verdicts+logs live in results/
@@ -44,9 +61,39 @@ open(p,'w').write(s.replace('</body>',probe+'</body>'))
 PYEOF
 [ -f "$T/index.html" ] || { echo "SMOKE-FAIL no index.html"; exit 1; }
 EXPR="window.__ep+'|'+window.__fl+'|'+window.__dops+'|'+(window.__err||'-')+'@'+(window.__errAt||'-')+'|'+window.__st+'|'+(window.__errLoc||'-')+'|'+window.__mut"
-SERIES=$(timeout $((SOAK+40)) node "$G/wsmin.js" "file://$T/index.html" "$EXPR" $((SOAK*1000)) 10000 2>/dev/null | grep '^POLL ')
+SOAK_URL="file://$T/index.html"
+# --- fail-fast plumbing: reap the poll client (wsmin.js reaps its own chromium tree on TERM) ---
+abort_soak(){ pkill -TERM -f "$SOAK_URL" 2>/dev/null; return 0; }
+ff_bail(){ echo "SMOKE-FAIL fail-fast: $2"; echo "FAILED-CHECK $1"; abort_soak; rm -rf "$T"; exit 1; }
+ff_name(){ [ "$FAIL_FAST" = "1" ] && echo "FAILED-CHECK $1"; return 0; }
+poll_dec(){ echo "$1" | sed 's/^POLL [0-9]*s //; s/"//g'; }
+
+SERIES=""
+if [ "$FAIL_FAST" = "1" ]; then
+  # Same soak, but consumed as it streams in so a failing check can cut it short.
+  _prev=""
+  while IFS= read -r _line; do
+    SERIES="${SERIES}${_line}
+"
+    _cur=$(poll_dec "$_line")
+    _ep=$(echo "$_cur" | cut -d'|' -f1); _fl=$(echo "$_cur" | cut -d'|' -f2); _do=$(echo "$_cur" | cut -d'|' -f3)
+    _err=$(echo "$_cur" | cut -d'|' -f4 | cut -d'@' -f1)
+    case "$_err" in global:*) ff_bail fatal-page-error "fatal page error: $_err";; esac
+    [ "$_ep" = "1" ] 2>/dev/null || ff_bail page-reloaded "page reloaded during soak (epoch=$_ep)"
+    if [ -n "$_prev" ]; then
+      _pfl=$(echo "$_prev" | cut -d'|' -f2); _pdo=$(echo "$_prev" | cut -d'|' -f3)
+      [ "$_fl" -gt "$_pfl" ] 2>/dev/null || ff_bail loop-frozen "FROZE mid-soak (fl $_pfl -> $_fl)"
+      [ "$_do" -gt "$_pdo" ] 2>/dev/null || ff_bail rendering-stopped "rendering stopped mid-soak (dops $_pdo -> $_do)"
+    fi
+    _prev="$_cur"
+  done < <(timeout $((SOAK+40)) node "$G/wsmin.js" "$SOAK_URL" "$EXPR" $((SOAK*1000)) 10000 2>/dev/null | grep --line-buffered '^POLL ')
+  SERIES=${SERIES%$'\n'}   # match the command-substitution form below (no trailing newline)
+  abort_soak
+else
+  SERIES=$(timeout $((SOAK+40)) node "$G/wsmin.js" "$SOAK_URL" "$EXPR" $((SOAK*1000)) 10000 2>/dev/null | grep '^POLL ')
+fi
 rm -rf "$T"
-[ -n "$SERIES" ] || { echo "SMOKE-FAIL no poll series (client died / page never loaded)"; exit 1; }
+[ -n "$SERIES" ] || { echo "SMOKE-FAIL no poll series (client died / page never loaded)"; ff_name no-poll-series; exit 1; }
 LAST=$(echo "$SERIES" | tail -1 | sed 's/^POLL [0-9]*s //; s/"//g')
 PREV=$(echo "$SERIES" | tail -2 | head -1 | sed 's/^POLL [0-9]*s //; s/"//g')
 fld(){ echo "$1" | cut -d'|' -f$2; }
@@ -55,14 +102,14 @@ STLAST=$(echo "$LAST" | cut -d'|' -f6); STLAST=${STLAST:-"?"}
 MUT=$(echo "$LAST" | cut -d'|' -f8); MUT=${MUT:-0}
 ERRLOC=$(echo "$LAST" | cut -d'|' -f7); ERRLOC=${ERRLOC:-"-"}
 echo "soak ${SOAK}s: $(echo "$SERIES" | wc -l) polls, last: ep=$EP fl=$FL dops=$DO err=$ERR st=$STLAST"
-case "$ERR" in global:*) echo "SMOKE-FAIL fatal page error: $ERR"; [ "$ERRLOC" != "-" ] && echo "ERRLOC $ERRLOC"; exit 1;; esac
+case "$ERR" in global:*) echo "SMOKE-FAIL fatal page error: $ERR"; [ "$ERRLOC" != "-" ] && echo "ERRLOC $ERRLOC"; ff_name fatal-page-error; exit 1;; esac
 LEFTMENU=$(echo "$SERIES" | grep -oE '\|(menu|play|pause|gameplay|levelclear|shop|gameover)[a-z]*\|?-?$' | grep -vc menu || true)
 NONMENU=$(echo "$SERIES" | sed 's/^POLL [0-9]*s //' | tr '|' '\n' | grep -cE '^(play|gameplay|pause|levelclear|shop|gameover)')
 [ "$NONMENU" -gt 0 ] 2>/dev/null || echo "NOTE states unreadable or never left menu (IIFE build - partial coverage)"
-[ "$FL" -gt 60 ] 2>/dev/null || { echo "SMOKE-FAIL loop never spun (fl=$FL)"; exit 1; }
-[ "$EP" = "1" ] 2>/dev/null || { echo "SMOKE-FAIL page reloaded during soak (epoch=$EP)"; exit 1; }
-[ "$FL" -gt "$FLP" ] 2>/dev/null || { echo "SMOKE-FAIL FROZE before end (fl $FLP -> $FL)"; exit 1; }
-[ "$DO" -gt "$DOP" ] 2>/dev/null || { echo "SMOKE-FAIL rendering stopped (dops $DOP -> $DO)"; exit 1; }
+[ "$FL" -gt 60 ] 2>/dev/null || { echo "SMOKE-FAIL loop never spun (fl=$FL)"; ff_name loop-never-spun; exit 1; }
+[ "$EP" = "1" ] 2>/dev/null || { echo "SMOKE-FAIL page reloaded during soak (epoch=$EP)"; ff_name page-reloaded; exit 1; }
+[ "$FL" -gt "$FLP" ] 2>/dev/null || { echo "SMOKE-FAIL FROZE before end (fl $FLP -> $FL)"; ff_name loop-frozen; exit 1; }
+[ "$DO" -gt "$DOP" ] 2>/dev/null || { echo "SMOKE-FAIL rendering stopped (dops $DOP -> $DO)"; ff_name rendering-stopped; exit 1; }
 # dead-menu detection: FAIL only when states are READABLE and never left menu
 # with zero DOM reactions; canvas-first games legitimately mutate nothing, so
 # unreadable-states + zero-mutations is a WARN (playtest decides).

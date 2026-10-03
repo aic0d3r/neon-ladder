@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-03
+
+- `smoke-gate.sh`: new **`--fail-fast`** flag (also `FAIL_FAST=1`). The gate now consumes the wsmin poll stream live instead of only after the soak, so a fatal page error, a reload, a stalled rAF loop or stopped draw-ops abort the soak on the poll where they happen and the script exits non-zero immediately, printing the failed check's name on a `FAILED-CHECK <name>` line (so the runner can tell *which* check killed the build). A 120s soak on a build that throws at boot now costs ~10s instead of 120s. Without the flag the gate is byte-for-byte the old behaviour: full soak, same verdicts, same output. `--help` and a missing-argument usage line added while in there.
+
 ## 2026-09-12
 
 - `game-score.py` **V2.3**: the serve-glue keyword match is word-bounded. V2.2's `/ready/` matched inside "already", which false-PASSed a build with no serve gate at all. The affected cell drops 17/19 -> 16/19 under V2.3. Behavior is now checked for real by the probe below.
@@ -26,3 +30,4 @@
 - toolcall-test.py (structured tool-call reliability, n-request JSON validation) and c4-test.py (concurrent streaming aggregate t/s) checked in.
 - shot.js: mkdir -p the output dir before writing - the runner auto-shot silently failed on every fresh cell (screenshots/ never existed). Now creates it.
 - npu-retrieval v2: SELF-CONTAINED TS extension (index build + search, no python at query time), stdlib-only rag-index.py writing the interchange format (.rag/index.json + vectors.f32), cap-eval.py capability benchmark. Verified live: pi answers from NPU retrieval correctly.
+- smoke-gate.sh: --fail-fast option (first failed check kills the soak immediately, names the check) + two real gate-bug fixes found during the NPU agent session (grep block-buffering via --line-buffered, trailing newline in SERIES accumulation).
