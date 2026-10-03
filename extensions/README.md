@@ -50,3 +50,14 @@ The ling-tiny extensions handle the *prefill-shaped* half of session overhead (c
 commits, repo maps, tool-result bloat) at 8x the main model's throughput. The NPU extensions
 handle the *semantic* half (finding code, detecting duplicates, routing decisions) at ~100ms
 per call without touching the iGPU. Together they cover both axes of agent-session cost.
+
+## Context management extensions (new 10-03, from learn-harness-engineering)
+
+| extension | what it does | saving |
+|---|---|---|
+| `context-prune.ts` | deduplicates identical tool outputs + strips status noise before compaction | 10-30% less context to compact; every dedup saves a re-prefill on all subsequent turns |
+| `stop-verify.ts` | runs bash -n / node --check / py_compile on modified files when the agent tries to stop | prevents broken builds from shipping (deterministic, no model) |
+| `progress-tracker.ts` | auto-writes PROGRESS.md every 5 turns; injects it on session resume | eliminates 5-10 min of re-exploration on session restart |
+
+These are pure TypeScript with zero model calls - they cost nothing to run and
+save context/time unconditionally. Install: copy to `~/.pi/agent/extensions/`.
