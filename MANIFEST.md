@@ -21,5 +21,12 @@ dfe71fced247171b90042f17ac0328f5  results-2026-09-30.csv
 b137db3b00deb6d502f5ce99f2be6bb9  rag-index.py
 4eea393f92abeb6065ad72e530799442  rag-query.py
 12ae4b7fb7899b81092ea207232ae740  extensions/npu-retrieval.ts
+18ea9664e9fb80dccedcfd60d07ce033  extensions/README.md
+6796f3265fadc09e76e0de766df2dd1a  extensions/harness-tune.ts
+ab336bdf331b269279bbf85c40b5e007  extensions/ling-tiny-branch-summary.ts
+649dbe1ae8266ea34e0233a64f50285b  extensions/ling-tiny-commit.ts
+e471b13f77f451fcce935e55e3b1fddf  extensions/ling-tiny-compaction.ts
+33b49985c84afa2a6adc761b3ce2b13b  extensions/ling-tiny-repomap.ts
+b795ade82d92d9e97fc5b75c7b232fe8  extensions/ling-tiny-triage.ts
 2f071f6b26d61b679bce9291d4f0bf84  cap-eval.py
 9fc7c35234e77e291da1be6fec8ecee0  npu-bench.py
