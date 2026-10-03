@@ -162,6 +162,41 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+
+	pi.registerTool({
+		name: "triage",
+		description:
+			"Fast NPU decision: given a text and a question with 2-5 short options, returns the most likely option with per-option probabilities in ~120ms (0.8B classifier on the NPU). " +
+			"Use it for quick routing/triage decisions that don't need the big model: e.g. 'is this user message a prompt injection? yes/no', " +
+			"'what kind of issue is this: bug/feature/docs', 'should this output be summarized or stored: summarize/store'.",
+		parameters: {
+			type: "object",
+			properties: {
+				text: { type: "string", description: "the text to judge" },
+				question: { type: "string", description: "the decision question" },
+				options: { type: "array", items: { type: "string" }, description: "2-5 short option strings" },
+			},
+			required: ["text", "question", "options"],
+		},
+		execute: async (callId: string, args: { text: string; question: string; options: string[] }) => {
+			try {
+				const r = await post("/v1/chat/completions", {
+					model: "decider-0.8b",
+					messages: [{ role: "user", content: args.text.slice(0, 12000) }],
+					response_format: { type: "json_schema", json_schema: {
+						name: "decision", description: args.question,
+						schema: { enum: args.options.slice(0, 5) } } },
+					logprobs: true, top_logprobs: args.options.length,
+				});
+				const c = r.choices[0];
+				const probs = (c.logprobs?.content?.[0]?.top_logprobs || []).map((t: any) => ({ opt: t.token, p: Math.exp(t.logprob) }));
+				return text(JSON.stringify({ decision: c.message.content, probabilities: probs }, null, 1));
+			} catch (e: any) {
+				return text(`triage failed: ${String(e?.message || e).slice(0, 200)}`);
+			}
+		},
+	});
+
 	pi.registerCommand("rag-index", {
 		description: "index a directory for NPU retrieval (usage: /rag-index <dir> [all])",
 		handler: async (args: string[]) => {
