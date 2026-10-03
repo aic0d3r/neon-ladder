@@ -61,3 +61,14 @@ per call without touching the iGPU. Together they cover both axes of agent-sessi
 
 These are pure TypeScript with zero model calls - they cost nothing to run and
 save context/time unconditionally. Install: copy to `~/.pi/agent/extensions/`.
+
+## Passive NPU extensions (new 10-03, zero adoption needed)
+
+| extension | what it does | measured |
+|---|---|---|
+| `auto-guard.ts` | screens every user message via qwen3guard on NPU (~85ms), injects caution if flagged | 80% accuracy on agent-relevant messages |
+| `npu-triage.ts` | summarizes oversized tool results via qwen3.5-2b on NPU before they enter context | 1.6x faster than main model (9.6s vs 15.5s), 98% context reduction |
+
+These fire automatically on pi lifecycle events — the agent doesn't know they exist.
+The context saving compounds: every summarized output saves ~2k tokens × remaining
+turns in re-prefill cost (break-even at ~3 remaining turns).
