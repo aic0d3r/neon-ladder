@@ -1,83 +1,78 @@
 /**
- * npu-triage.ts — passive tool-result summarization on the NPU 2B model.
+ * npu-triage.ts v2 — passive tool-result summarization on the NPU.
  *
- * When a tool result exceeds the size threshold, summarize it via qwen3.5-2b
- * on the NPU BEFORE it enters the agent's context. This prevents context
- * bloat without the agent needing to do anything.
+ * Available hooks: session_before_compact, after_provider_response
+ * NOT available: after_tool_execution (was used in v1 — didn't work)
  *
- * Differs from ling-tiny-triage in that:
- * 1. It runs on the NPU (no sidecar server needed)
- * 2. It produces a real summary (not just truncation)
- * 3. It fires automatically on tool completion (zero adoption needed)
+ * v2 approach: since we can't intercept individual tool results in-flight,
+ * we do two things:
+ * 1. At compaction time (session_before_compact): find oversized tool results
+ *    in the conversation and replace them with NPU-generated summaries.
+ * 2. Track context stats for observability.
  *
- * Requires: halogen 0.16+ NPU server on :8731 with qwen3.5-2b loaded.
- * Configure: PI_NPU_TRIAGE_CHARS (default 8000 — results larger than this get summarized)
+ * This means the summarization happens at compaction rather than immediately,
+ * but the context saving is the same — the summarized version is what gets
+ * prefilled on all subsequent turns after compaction.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const BASE = process.env.PI_NPU_BASE || "http://127.0.0.1:8731";
-const THRESHOLD = parseInt(process.env.PI_NPU_TRIAGE_CHARS || "8000", 10);
-const MAX_CONTEXT = 12000; // chars of original to send as summarization context
+const THRESHOLD = parseInt(process.env.PI_NPU_TRIAGE_CHARS || "6000", 10);
 
-async function summarize(text: string, toolName: string): Promise<string | null> {
+async function npuSummarize(text: string, context: string): Promise<string | null> {
 	try {
-		const prompt = `Summarize this ${toolName} output concisely. Keep: error messages, key findings, file names, line numbers, test results. Drop: repeated lines, blank lines, verbose progress output.\n\n${text.slice(0, MAX_CONTEXT)}`;
+		const prompt = `Summarize this ${context} concisely. Keep: errors, findings, file names, line numbers, test results. Drop: repeated lines, blank lines, verbose progress.\n\n${text.slice(0, 12000)}`;
 		const res = await fetch(BASE + "/v1/chat/completions", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				model: "qwen3.5-2b",
-				messages: [{ role: "user", content: prompt }],
-				max_tokens: 500,
-			}),
+			body: JSON.stringify({ model: "qwen3.5-2b", messages: [{ role: "user", content: prompt }], max_tokens: 400 }),
 			signal: AbortSignal.timeout(30000),
 		});
 		if (!res.ok) return null;
 		const r = await res.json();
-		const summary = r.choices?.[0]?.message?.content;
-		return (summary && summary.trim().length > 20) ? summary.trim() : null;
-	} catch {
-		return null; // fail open — don't block the agent on NPU errors
-	}
+		const s = r.choices?.[0]?.message?.content;
+		return (s && s.trim().length > 20) ? s.trim() : null;
+	} catch { return null; }
 }
 
 export default function (pi: ExtensionAPI) {
 	let triagedCount = 0;
 	let charsSaved = 0;
 
-	pi.on("after_tool_execution", async (event: any, ctx: any) => {
-		const output = event?.output || event?.result || "";
-		const toolName = event?.tool || event?.name || "tool";
+	pi.on("session_before_compact", async (event: any, ctx: any) => {
+		const messages = event?.messages || [];
+		if (!messages.length) return;
 
-		if (typeof output !== "string" || output.length < THRESHOLD) return;
+		let summarized = 0;
+		const cleaned = [...messages];
 
-		// Don't summarize code files the agent is reading (they need the full content)
-		if (toolName === "read" || toolName === "edit" || toolName === "write") return;
+		for (let i = 0; i < cleaned.length; i++) {
+			const msg = cleaned[i];
+			if (msg.role !== "tool" && msg.role !== "function") continue;
+			const content = typeof msg.content === "string" ? msg.content : "";
+			if (content.length < THRESHOLD) continue;
+			if (content.startsWith("[npu-triage:")) continue; // already summarized
 
-		const summary = await summarize(output, toolName);
-		if (!summary) return;
+			const summary = await npuSummarize(content, "tool output");
+			if (!summary) continue;
 
-		const saved = output.length - summary.length;
-		if (saved < 100) return; // not worth it
+			const saved = content.length - summary.length;
+			if (saved < 100) continue;
 
-		triagedCount++;
-		charsSaved += saved;
-
-		// Replace the output with the summary
-		if (event.output !== undefined) {
-			event.output = `[npu-triage: summarized ${output.length} chars to ${summary.length} chars]\n\n${summary}`;
-		} else if (event.result !== undefined) {
-			event.result = `[npu-triage: summarized ${output.length} chars to ${summary.length} chars]\n\n${summary}`;
+			summarized++;
+			charsSaved += saved;
+			cleaned[i] = { ...msg, content: `[npu-triage: ${content.length} -> ${summary.length} chars]\n\n${summary}` };
 		}
 
-		console.log(`[npu-triage] ${toolName}: ${output.length} -> ${summary.length} chars (saved ${(saved / 1000).toFixed(1)}k)`);
+		if (summarized > 0) {
+			event.messages = cleaned;
+			console.log(`[npu-triage] compaction: summarized ${summarized} oversized results, ${(charsSaved / 1000).toFixed(1)}k chars saved total`);
+		}
 	});
 
 	pi.registerCommand("triage-stats", {
 		description: "show npu-triage stats",
-		handler: async () => {
-			return `triaged: ${triagedCount} outputs | chars saved: ${(charsSaved / 1000).toFixed(1)}k | threshold: ${THRESHOLD} chars`;
-		},
+		handler: async () => `triaged: ${triagedCount} | chars saved: ${(charsSaved / 1000).toFixed(1)}k | threshold: ${THRESHOLD}`,
 	});
 }
