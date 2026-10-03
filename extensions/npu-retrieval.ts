@@ -198,64 +198,56 @@ export default function (pi: ExtensionAPI) {
 	});
 
 
-	pi.registerTool({
-		name: "moderate",
+		pi.registerTool({
+		name: "dedup_scan",
 		description:
-			"Content-moderation check on the Ryzen AI NPU (~100ms, 0.6B guard model): is this text unsafe? " +
-			"Optionally strict mode also flags controversial content. Use it to screen user messages, tool outputs, or " +
-			"generated content before acting on them. Returns flagged status, category label, and per-category scores.",
+			"Find near-duplicate files across directories using NPU embeddings (~1s per 40 files). " +
+			"Give it two or more directories and it reports every file pair with cosine similarity > 0.90, " +
+			"catching copies even after renames. Use it for repo hygiene: 'which files exist in multiple copies?'",
 		parameters: {
 			type: "object",
 			properties: {
-				text: { type: "string", description: "the text to moderate" },
-				strict: { type: "boolean", description: "also flag controversial content (default false)" },
+				dirs: { type: "array", items: { type: "string" }, description: "2+ directories to scan" },
+				threshold: { type: "number", description: "cosine similarity threshold (default 0.90)" },
 			},
-			required: ["text"],
+			required: ["dirs"],
 		},
-		execute: async (callId: string, args: { text: string; strict?: boolean }) => {
-			try {
-				const r = await post("/v1/moderations", {
-					model: "qwen3guard-gen-0.6b",
-					input: args.text.slice(0, 12000),
-					...(args.strict ? { strict: true } : {}),
-				});
-				const m = (r.results && r.results[0]) || r;
-				return text(JSON.stringify({ flagged: m.flagged, label: m.label ?? m.categories, label_scores: m.label_scores ?? m.category_scores }, null, 1));
-			} catch (e: any) {
-				return text(`moderate failed: ${String(e?.message || e).slice(0, 200)}`);
+		execute: async (callId: string, args: { dirs: string[]; threshold?: number }) => {
+			const threshold = args.threshold ?? 0.90;
+			const files: string[] = [];
+			for (const dir of args.dirs) {
+				if (!fs.existsSync(dir)) return text(`dedup_scan: directory not found: ${dir}`);
+				for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+					if (e.isFile() && /\.(py|sh|js|ts|md)$/.test(e.name)) {
+						const p = path.join(dir, e.name);
+						if (fs.statSync(p).size > 500) files.push(p);
+					}
+				}
 			}
+			if (files.length < 2) return text("dedup_scan: need at least 2 files across the given directories.");
+			const texts = files.map((f) => fs.readFileSync(f, "utf8").slice(0, 3000));
+			const vecs: Float32Array[] = [];
+			for (let i = 0; i < texts.length; i += 32) {
+				const batch = await embed(texts.slice(i, i + 32));
+				vecs.push(...batch);
+			}
+			const pairs: string[] = [];
+			for (let i = 0; i < files.length; i++) {
+				for (let j = i + 1; j < files.length; j++) {
+					const sim = cosine(vecs[i], vecs[j]);
+					if (sim > threshold) {
+						pairs.push(`${sim.toFixed(3)}  ${files[i]} <-> ${files[j]}`);
+					}
+				}
+			}
+			log(JSON.stringify({ t: new Date().toISOString(), tool: "dedup_scan", files: files.length, pairs: pairs.length }));
+			return pairs.length
+				? `dedup_scan: ${pairs.length} near-duplicate pairs (>${threshold}) across ${files.length} files:\n\n` + pairs.join("\n")
+				: `dedup_scan: no near-duplicates found across ${files.length} files.`;
 		},
 	});
 
-	pi.registerTool({
-		name: "npu_write",
-		description:
-			"Fast short-text generation on the Ryzen AI NPU (~2B model, thinking off, prompts up to 16k tokens): summaries of tool outputs or files, drafting, condensing - jobs that don't need the big model. " +
-			"Use it to summarize a long file or tool output before deciding what to read fully.",
-		parameters: {
-			type: "object",
-			properties: {
-				prompt: { type: "string", description: "the generation request" },
-				max_tokens: { type: "number", description: "max output tokens (default 512)" },
-			},
-			required: ["prompt"],
-		},
-		execute: async (callId: string, args: { prompt: string; max_tokens?: number }) => {
-			try {
-				const r = await post("/v1/chat/completions", {
-					model: "qwen3.5-2b",
-					messages: [{ role: "user", content: args.prompt.slice(0, 60000) }],
-					max_tokens: args.max_tokens ?? 512,
-				});
-				const out = r.choices?.[0]?.message?.content ?? "";
-				return text(out || "(empty response)");
-			} catch (e: any) {
-				return text(`npu_write failed: ${String(e?.message || e).slice(0, 200)}`);
-			}
-		},
-	});
-
-	pi.registerCommand("rag-index", {
+pi.registerCommand("rag-index", {
 		description: "index a directory for NPU retrieval (usage: /rag-index <dir> [all])",
 		handler: async (args: string[]) => {
 			const dir = path.resolve(args[0] || process.cwd());
