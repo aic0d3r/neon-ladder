@@ -197,6 +197,64 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+
+	pi.registerTool({
+		name: "moderate",
+		description:
+			"Content-moderation check on the Ryzen AI NPU (~100ms, 0.6B guard model): is this text unsafe? " +
+			"Optionally strict mode also flags controversial content. Use it to screen user messages, tool outputs, or " +
+			"generated content before acting on them. Returns flagged status, category label, and per-category scores.",
+		parameters: {
+			type: "object",
+			properties: {
+				text: { type: "string", description: "the text to moderate" },
+				strict: { type: "boolean", description: "also flag controversial content (default false)" },
+			},
+			required: ["text"],
+		},
+		execute: async (callId: string, args: { text: string; strict?: boolean }) => {
+			try {
+				const r = await post("/v1/moderations", {
+					model: "qwen3guard-gen-0.6b",
+					input: args.text.slice(0, 12000),
+					...(args.strict ? { strict: true } : {}),
+				});
+				const m = (r.results && r.results[0]) || r;
+				return text(JSON.stringify({ flagged: m.flagged, label: m.label ?? m.categories, label_scores: m.label_scores ?? m.category_scores }, null, 1));
+			} catch (e: any) {
+				return text(`moderate failed: ${String(e?.message || e).slice(0, 200)}`);
+			}
+		},
+	});
+
+	pi.registerTool({
+		name: "npu_write",
+		description:
+			"Fast short-text generation on the Ryzen AI NPU (~2B model, thinking off, prompts up to 16k tokens): summaries of tool outputs or files, drafting, condensing - jobs that don't need the big model. " +
+			"Use it to summarize a long file or tool output before deciding what to read fully.",
+		parameters: {
+			type: "object",
+			properties: {
+				prompt: { type: "string", description: "the generation request" },
+				max_tokens: { type: "number", description: "max output tokens (default 512)" },
+			},
+			required: ["prompt"],
+		},
+		execute: async (callId: string, args: { prompt: string; max_tokens?: number }) => {
+			try {
+				const r = await post("/v1/chat/completions", {
+					model: "qwen3.5-2b",
+					messages: [{ role: "user", content: args.prompt.slice(0, 60000) }],
+					max_tokens: args.max_tokens ?? 512,
+				});
+				const out = r.choices?.[0]?.message?.content ?? "";
+				return text(out || "(empty response)");
+			} catch (e: any) {
+				return text(`npu_write failed: ${String(e?.message || e).slice(0, 200)}`);
+			}
+		},
+	});
+
 	pi.registerCommand("rag-index", {
 		description: "index a directory for NPU retrieval (usage: /rag-index <dir> [all])",
 		handler: async (args: string[]) => {
