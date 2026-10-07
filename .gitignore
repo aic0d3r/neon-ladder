@@ -1,0 +1,7 @@
+.pi/
+.progress-log/
+.rag/
+PROGRESS.md
+halogen.log
+ling-tiny.log
+start-halogen.sh

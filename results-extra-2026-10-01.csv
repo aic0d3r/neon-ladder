@@ -1,0 +1,3 @@
+engine,toolcalls_n40,depth131k,c4_concurrency,date
+halogen-0.15.1-native,"toolcalls 37/40 (92.5%), lat 9.5s","131k depth: serial 32.8 / mtp 40.7, prefill ~1317",c4 aggregate 72.3 t/s,2026-10-01
+gufo-0.3.0,"toolcalls 37/40 (92.5%), lat 15.0s - zero corruption","131k depth: 13.0 (server mtp), prefill ~1048",c4 aggregate 70.0 t/s,2026-10-01
